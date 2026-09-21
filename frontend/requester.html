@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request Blood - Blood Hub</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <header>
+    <a href="/" class="brand">🩸 Blood Hub <span class="badge">Requester Portal</span></a>
+    <nav>
+      <a href="/requester" class="active">Request Blood</a>
+      <a href="/donor">Donor Portal</a>
+      <a href="/simulator">Simulator</a>
+    </nav>
+  </header>
+
+  <div class="container" style="max-width: 750px;">
+
+    <!-- Request Form Card -->
+    <div class="card" id="card-create-request">
+      <h2 style="font-size: 1.35rem; margin-bottom: 0.5rem; color: #991b1b;">Create Emergency Blood Request</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        The system will immediately calculate compatible, available donors nearby and dispatch targeted offers in concentric waves.
+      </p>
+
+      <form id="form-blood-request" onsubmit="handleCreateRequest(event)">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Patient Name</label>
+            <input type="text" id="patient_name" class="form-control" placeholder="e.g. Rahim Chowdhury" required>
+          </div>
+          <div class="form-group">
+            <label>Required Blood Group</label>
+            <select id="blood_group" class="form-control" required>
+              <option value="B+">B Positive (B+)</option>
+              <option value="O+">O Positive (O+)</option>
+              <option value="A+">A Positive (A+)</option>
+              <option value="AB+">AB Positive (AB+)</option>
+              <option value="B-">B Negative (B-)</option>
+              <option value="O-">O Negative (O-) [Universal]</option>
+              <option value="A-">A Negative (A-)</option>
+              <option value="AB-">AB Negative (AB-)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Component Required</label>
+            <select id="component" class="form-control">
+              <option value="WHOLE_BLOOD">Whole Blood</option>
+              <option value="PACKED_RED_CELLS">Packed Red Blood Cells (PRBC)</option>
+              <option value="PLATELETS">Platelet Concentrate (Apheresis/RDP)</option>
+              <option value="PLASMA">Fresh Frozen Plasma (FFP)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Units Needed (Bags)</label>
+            <input type="number" id="units_needed" class="form-control" value="1" min="1" max="10" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Hospital / Facility in Bangladesh</label>
+          <select id="hospital_select" class="form-control" onchange="handleHospitalChange()">
+            <option value="Square Hospital|23.7533|90.3817|Panthapath, Dhaka">Square Hospital, Panthapath, Dhaka</option>
+            <option value="Dhaka Medical College Hospital|23.7258|90.3976|Secretariat Rd, Dhaka 1000">Dhaka Medical College Hospital (DMCH)</option>
+            <option value="BSMMU (PG Hospital)|23.7388|90.3957|Shahbag, Dhaka">BSMMU (PG Hospital), Shahbag, Dhaka</option>
+            <option value="National Institute of Cardiovascular Diseases|23.7702|90.3705|Sher-e-Bangla Nagar, Dhaka">NICVD, Sher-e-Bangla Nagar, Dhaka</option>
+            <option value="BIRDEM General Hospital|23.7397|90.3959|Shahbag, Dhaka">BIRDEM Hospital, Shahbag, Dhaka</option>
+            <option value="custom">-- Enter Custom Hospital / Clinic --</option>
+          </select>
+        </div>
+
+        <div id="custom-hospital-fields" class="grid-2" style="display: none;">
+          <div class="form-group">
+            <label>Hospital Name</label>
+            <input type="text" id="custom_hospital_name" class="form-control" placeholder="Hospital Name">
+          </div>
+          <div class="form-group">
+            <label>Address / District</label>
+            <input type="text" id="custom_hospital_address" class="form-control" placeholder="Address">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Requester Contact Phone</label>
+            <input type="tel" id="contact_phone" class="form-control" placeholder="+88017XXXXXXXX" value="+8801711111111" required>
+          </div>
+          <div class="form-group">
+            <label>Urgency Level</label>
+            <select id="urgency" class="form-control">
+              <option value="CRITICAL_IMMEDIATE">CRITICAL (Immediate surgery / ICU)</option>
+              <option value="URGENT" selected>URGENT (Needed within 2-4 hours)</option>
+              <option value="SCHEDULED">SCHEDULED (Elective procedure / Transfusion)</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" style="padding: 0.85rem; font-size: 1.05rem;">
+          🚀 Broadcast Dispatch Waves
+        </button>
+      </form>
+    </div>
+
+    <!-- Active Dispatch Live Tracker (Shown once request is created) -->
+    <div class="card" id="card-dispatch-tracker" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+          <span class="badge-status awaiting" id="tracker-badge">MATCHING DONORS</span>
+          <h2 id="tracker-title" style="font-size: 1.35rem; margin-top: 0.35rem;">B+ at Square Hospital</h2>
+        </div>
+        <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="cancelActiveRequest()">Cancel Request</button>
+      </div>
+
+      <!-- Wave Timeline Indicator -->
+      <div class="wave-timeline">
+        <div class="wave-step">
+          <div class="wave-dot active" id="dot-wave-1">1</div>
+          <span style="font-size: 0.75rem; font-weight: 600;">Wave 1 (5km)</span>
+        </div>
+        <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.5rem;"></div>
+        <div class="wave-step">
+          <div class="wave-dot" id="dot-wave-2">2</div>
+          <span style="font-size: 0.75rem; font-weight: 600;">Wave 2 (8km)</span>
+        </div>
+        <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.5rem;"></div>
+        <div class="wave-step">
+          <div class="wave-dot" id="dot-wave-3">3</div>
+          <span style="font-size: 0.75rem; font-weight: 600;">Wave 3 (15km)</span>
+        </div>
+        <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.5rem;"></div>
+        <div class="wave-step">
+          <div class="wave-dot" id="dot-fallback">🏥</div>
+          <span style="font-size: 0.75rem; font-weight: 600;">Blood Banks</span>
+        </div>
+      </div>
+
+      <!-- Live Wave Details Box -->
+      <div id="wave-status-box" style="background: #f8fafc; border: 1px solid var(--border); padding: 1.25rem; border-radius: 12px; margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 0.8rem; color: #64748b;">CURRENT STATUS</div>
+            <strong id="live-wave-text" style="font-size: 1.1rem; color: #0f172a;">Wave 1 Active: Contacting nearest donors within 5 km...</strong>
+          </div>
+          <div id="wave-countdown" style="font-size: 1.25rem; font-weight: 800; color: #dc2626;">25s</div>
+        </div>
+      </div>
+
+      <!-- Confirmed Donor Connection Card (Revealed on accept) -->
+      <div id="confirmed-donor-card" style="display: none; background: #ecfdf5; border: 2px solid #10b981; padding: 1.25rem; border-radius: 12px; margin-bottom: 1.25rem;">
+        <h3 style="color: #047857; margin-bottom: 0.5rem;">🎉 Donor Confirmed & En Route!</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h4 id="assigned-donor-name" style="font-size: 1.2rem;">Tanvir Ahmed</h4>
+            <p id="assigned-donor-blood" style="font-size: 0.9rem; color: #065f46;">Blood Group: B+</p>
+          </div>
+          <div>
+            <a id="btn-call-donor" href="tel:+8801722222222" class="btn btn-success" style="font-size: 1rem;">
+              📞 Call Donor: <span id="assigned-donor-phone">+8801722222222</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let activeRequestId = null;
+    let pollInterval = null;
+
+    function handleHospitalChange() {
+      const select = document.getElementById('hospital_select');
+      const customDiv = document.getElementById('custom-hospital-fields');
+      customDiv.style.display = select.value === 'custom' ? 'grid' : 'none';
+    }
+
+    async function handleCreateRequest(e) {
+      e.preventDefault();
+      
+      let hospitalName = "Square Hospital";
+      let hospitalAddress = "Panthapath, Dhaka";
+      let lat = 23.7533;
+      let lon = 90.3817;
+
+      const hospSelect = document.getElementById('hospital_select').value;
+      if (hospSelect !== 'custom') {
+        const parts = hospSelect.split('|');
+        hospitalName = parts[0];
+        lat = parseFloat(parts[1]);
+        lon = parseFloat(parts[2]);
+        hospitalAddress = parts[3];
+      } else {
+        hospitalName = document.getElementById('custom_hospital_name').value || 'Hospital';
+        hospitalAddress = document.getElementById('custom_hospital_address').value || 'Dhaka';
+      }
+
+      // Ensure logged in requester token
+      if (!getToken()) {
+        try {
+          const lRes = await apiRequest('/auth/login', 'POST', {
+            phone: '+8801711111111',
+            password: 'requester123'
+          });
+          setToken(lRes.access_token);
+        } catch(err) {
+          // register requester if not seeded
+          const rRes = await apiRequest('/auth/register', 'POST', {
+            phone: '+8801711111111',
+            password: 'requester123',
+            full_name: 'Dr. Farhana Karim',
+            role: 'REQUESTER'
+          });
+          setToken(rRes.access_token);
+        }
+      }
+
+      const payload = {
+        patient_name: document.getElementById('patient_name').value,
+        blood_group: document.getElementById('blood_group').value,
+        component: document.getElementById('component').value,
+        units_needed: parseInt(document.getElementById('units_needed').value),
+        hospital_name: hospitalName,
+        hospital_address: hospitalAddress,
+        latitude: lat,
+        longitude: lon,
+        urgency: document.getElementById('urgency').value,
+        contact_phone: document.getElementById('contact_phone').value
+      };
+
+      try {
+        const res = await apiRequest('/requests/', 'POST', payload);
+        activeRequestId = res.id;
+        showToast('🚀 Blood Request created! Wave 1 activated.');
+        document.getElementById('card-create-request').style.display = 'none';
+        document.getElementById('card-dispatch-tracker').style.display = 'block';
+        document.getElementById('tracker-title').innerText = `${res.blood_group} at ${res.hospital_name}`;
+
+        pollRequestStatus();
+        pollInterval = setInterval(pollRequestStatus, 3000);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function pollRequestStatus() {
+      if (!activeRequestId) return;
+      try {
+        const req = await apiRequest(`/requests/${activeRequestId}`);
+        
+        // Update wave dots
+        const waveNum = req.current_wave;
+        document.getElementById('dot-wave-1').className = waveNum >= 1 ? (waveNum > 1 ? 'wave-dot completed' : 'wave-dot active') : 'wave-dot';
+        document.getElementById('dot-wave-2').className = waveNum >= 2 ? (waveNum > 2 ? 'wave-dot completed' : 'wave-dot active') : 'wave-dot';
+        document.getElementById('dot-wave-3').className = waveNum >= 3 ? (waveNum > 3 ? 'wave-dot completed' : 'wave-dot active') : 'wave-dot';
+
+        if (req.status === 'ASSIGNED' || req.assigned_donors.length > 0) {
+          document.getElementById('tracker-badge').className = 'badge-status active';
+          document.getElementById('tracker-badge').innerText = 'DONOR ASSIGNED';
+          document.getElementById('live-wave-text').innerText = 'A donor has accepted this emergency request!';
+          
+          const donor = req.assigned_donors[0];
+          document.getElementById('confirmed-donor-card').style.display = 'block';
+          document.getElementById('assigned-donor-name').innerText = donor.donor_name;
+          document.getElementById('assigned-donor-blood').innerText = `Blood Group: ${donor.blood_group}`;
+          document.getElementById('assigned-donor-phone').innerText = donor.donor_phone;
+          document.getElementById('btn-call-donor').href = `tel:${donor.donor_phone}`;
+          clearInterval(pollInterval);
+        } else if (req.status === 'UNFULFILLED') {
+          document.getElementById('tracker-badge').className = 'badge-status danger';
+          document.getElementById('tracker-badge').innerText = 'WAVES EXHAUSTED - USE BLOOD BANK';
+          document.getElementById('live-wave-text').innerText = 'All donor waves passed. Direct emergency fallback to institutional blood banks.';
+          clearInterval(pollInterval);
+        } else {
+          document.getElementById('live-wave-text').innerText = `Wave ${waveNum} Active: Searching & notifying nearby donors...`;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function cancelActiveRequest() {
+      if (!activeRequestId) return;
+      if (!confirm('Are you sure you want to cancel this emergency request?')) return;
+      try {
+        await apiRequest(`/requests/${activeRequestId}/cancel`, 'POST', { reason: 'Requester cancelled' });
+        showToast('Request cancelled.');
+        clearInterval(pollInterval);
+        location.reload();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+  </script>
+</body>
+</html>

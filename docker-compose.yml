@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  bloodhub-api:
+    build: .
+    container_name: bloodhub_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+      - SECRET_KEY=CHANGE_ME_PRODUCTION_SECRET_KEY_MIN_32_CHARS
+      - DATABASE_URL=sqlite:////data/bloodhub.db
+    volumes:
+      - bloodhub_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  bloodhub-worker:
+    build: .
+    container_name: bloodhub_worker
+    restart: always
+    command: ["python3", "scripts/run_worker.py"]
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=sqlite:////data/bloodhub.db
+      - WORKER_POLL_INTERVAL=5
+    volumes:
+      - bloodhub_data:/data
+    depends_on:
+      - bloodhub-api
+
+volumes:
+  bloodhub_data:

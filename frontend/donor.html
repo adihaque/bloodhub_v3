@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Blood Hub — Donor App</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+  <!-- Environment Badge -->
+  <div class="env-banner">
+    <span>🩸 Blood Hub Bangladesh</span>
+    <span class="env-tag pilot" id="env-badge">PILOT</span>
+  </div>
+
+  <header>
+    <a href="/" class="brand">
+      Blood Hub
+    </a>
+    <nav id="top-nav">
+      <span id="nav-user-label" style="font-size: 0.85rem; color: var(--text-muted);"></span>
+      <a href="javascript:void(0)" id="btn-nav-logout" onclick="handleLogout()" style="display: none; color: #b91c1c;">Log out</a>
+    </nav>
+  </header>
+
+  <div class="container">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: AUTHENTICATION (REGISTER / LOGIN)  -->
+    <!-- ========================================== -->
+    <div id="view-auth">
+      
+      <!-- Tab Switcher -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+        <button id="tab-reg" class="btn btn-outline" style="flex: 1; border-color: var(--brand-primary); color: var(--brand-primary); background: var(--brand-primary-light);" onclick="switchAuthTab('reg')">
+          Register as Donor
+        </button>
+        <button id="tab-login" class="btn btn-outline" style="flex: 1;" onclick="switchAuthTab('login')">
+          Sign In
+        </button>
+      </div>
+
+      <!-- Registration Card -->
+      <div class="card" id="card-register">
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.35rem;">Register as a Blood Donor</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Connect with patients in urgent need nearby. Only required information is collected.
+        </p>
+
+        <form id="form-register" onsubmit="handleRegister(event)">
+          
+          <div class="form-group">
+            <label class="form-label" for="reg-name">Full Name</label>
+            <input type="text" id="reg-name" class="form-control" placeholder="e.g. Tanvir Ahmed" required autocomplete="name">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-phone">Mobile Phone Number</label>
+            <input type="tel" id="reg-phone" class="form-control" placeholder="017XXXXXXXX" inputmode="numeric" required autocomplete="tel">
+            <div class="form-hint">Used for SMS alerts and urgent coordination.</div>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label class="form-label" for="reg-wa" style="margin-bottom: 0;">WhatsApp Number (Optional)</label>
+              <label style="font-size: 0.775rem; color: var(--text-muted); cursor: pointer;">
+                <input type="checkbox" id="reg-wa-same" onchange="toggleSamePhone()"> Same as mobile
+              </label>
+            </div>
+            <input type="tel" id="reg-wa" class="form-control" placeholder="017XXXXXXXX" inputmode="numeric">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-blood">Blood Group</label>
+            <select id="reg-blood" class="form-control" required>
+              <option value="B+">B Positive (B+)</option>
+              <option value="O+">O Positive (O+)</option>
+              <option value="A+">A Positive (A+)</option>
+              <option value="AB+">AB Positive (AB+)</option>
+              <option value="B-">B Negative (B-)</option>
+              <option value="O-">O Negative (O-) [Universal Red Cells]</option>
+              <option value="A-">A Negative (A-)</option>
+              <option value="AB-">AB Negative (AB-)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Donation Preference</label>
+            <div class="segment-group">
+              <div class="segment-btn active" id="btn-intent-regular" onclick="selectIntent('REGULAR')">Regular Donor</div>
+              <div class="segment-btn" id="btn-intent-needed" onclick="selectIntent('WHEN_NEEDED')">When Needed</div>
+              <div class="segment-btn" id="btn-intent-later" onclick="selectIntent('DONATE_LATER')">Donate Later</div>
+            </div>
+            <input type="hidden" id="reg-intent" value="REGULAR">
+            <div class="form-hint" id="intent-hint">Ready to donate on schedule (every 3-4 months).</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-last-date">Last Donation Date (If any)</label>
+            <input type="date" id="reg-last-date" class="form-control">
+            <div class="form-hint">Leave blank if this will be your first donation.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Location (For nearby matching)</label>
+            <button type="button" class="btn btn-outline btn-block" id="btn-gps" onclick="fetchGPSLocation()" style="margin-bottom: 0.5rem;">
+              📍 Use Current Device Location (GPS)
+            </button>
+            <select id="reg-area" class="form-control" onchange="updateAreaCoordinates()">
+              <option value="Panthapath, Dhaka|23.7533|90.3817">Panthapath, Dhaka (Near Square Hospital)</option>
+              <option value="Shahbag, Dhaka|23.7388|90.3957">Shahbag, Dhaka (Near BSMMU / DMCH)</option>
+              <option value="Dhanmondi, Dhaka|23.7461|90.3742">Dhanmondi, Dhaka</option>
+              <option value="Mohammadpur, Dhaka|23.7601|90.3621">Mohammadpur, Dhaka</option>
+              <option value="Mirpur, Dhaka|23.8041|90.3683">Mirpur, Dhaka</option>
+              <option value="Uttara, Dhaka|23.8759|90.3795">Uttara, Dhaka</option>
+              <option value="Gulshan/Banani, Dhaka|23.7805|90.4267">Gulshan / Banani, Dhaka</option>
+              <option value="Old Dhaka|23.7104|90.4074">Old Dhaka (Sadarghat / Lalbagh)</option>
+              <option value="Chittagong|22.3569|91.7832">Chittagong City</option>
+              <option value="Sylhet|24.8949|91.8687">Sylhet City</option>
+              <option value="Rajshahi|24.3636|88.6241">Rajshahi City</option>
+              <option value="Other Area|23.8103|90.4125">Other Area in Bangladesh</option>
+            </select>
+            <input type="hidden" id="reg-lat" value="23.7533">
+            <input type="hidden" id="reg-lon" value="90.3817">
+            <div class="form-hint">Exact home location is fuzzed for privacy.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-pass">Create Password</label>
+            <input type="password" id="reg-pass" class="form-control" placeholder="Minimum 6 characters" required autocomplete="new-password">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-submit-reg" style="margin-top: 1rem;">
+            Complete Donor Registration
+          </button>
+        </form>
+      </div>
+
+      <!-- Sign In Card -->
+      <div class="card" id="card-login" style="display: none;">
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.35rem;">Donor Sign In</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Log into your Blood Hub donor profile.
+        </p>
+
+        <form id="form-login" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label" for="login-phone">Mobile Phone Number</label>
+            <input type="tel" id="login-phone" class="form-control" placeholder="017XXXXXXXX" inputmode="numeric" required autocomplete="tel">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-pass">Password</label>
+            <input type="password" id="login-pass" class="form-control" placeholder="Your password" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-submit-login" style="margin-top: 1rem;">
+            Sign In to Dashboard
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: DONOR DASHBOARD (LOGGED IN)        -->
+    <!-- ========================================== -->
+    <div id="view-dashboard" style="display: none;">
+
+      <!-- Profile Header Summary -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <h1 id="dash-name" style="font-size: 1.35rem; margin-bottom: 0.2rem;">--</h1>
+            <div id="dash-phone" style="font-size: 0.875rem; color: var(--text-muted);">--</div>
+            <div id="dash-area" style="font-size: 0.825rem; color: var(--text-subtle); margin-top: 0.25rem;">📍 --</div>
+          </div>
+          <div style="text-align: right;">
+            <div id="dash-blood" class="blood-pill">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prominent Availability State Switcher -->
+      <div class="card" style="padding: 0.75rem;">
+        <div id="avail-box" class="availability-box available" onclick="toggleAvailability()">
+          <div>
+            <div id="avail-title" style="font-weight: 700; font-size: 1rem; color: #166534;">🟢 AVAILABLE TO DONATE</div>
+            <div id="avail-sub" style="font-size: 0.8rem; color: #15803d; margin-top: 0.15rem;">
+              You can receive emergency blood requests nearby. Tap to change.
+            </div>
+          </div>
+          <button class="btn btn-outline" id="btn-avail-action" style="height: 38px; min-height: 38px; font-size: 0.85rem; padding: 0 0.85rem;">
+            Pause
+          </button>
+        </div>
+      </div>
+
+      <!-- Key Donor Details -->
+      <div class="card">
+        <h3 style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-subtle); margin-bottom: 0.75rem;">
+          Donation Information
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.875rem;">
+          <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
+            <div style="color: var(--text-subtle); font-size: 0.75rem;">PREFERENCE</div>
+            <strong id="dash-intent">Regular Donor</strong>
+          </div>
+
+          <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
+            <div style="color: var(--text-subtle); font-size: 0.75rem;">TOTAL DONATIONS</div>
+            <strong id="dash-total">0 times</strong>
+          </div>
+
+          <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
+            <div style="color: var(--text-subtle); font-size: 0.75rem;">LAST DONATION</div>
+            <strong id="dash-last-date">None recorded</strong>
+          </div>
+
+          <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
+            <div style="color: var(--text-subtle); font-size: 0.75rem;">WHATSAPP</div>
+            <strong id="dash-wa">--</strong>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.1rem;">
+          <button class="btn btn-outline btn-block" onclick="openEditProfileModal()">
+            ✏️ Edit Profile Details
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Incoming Requests Notification Card -->
+      <div class="card" id="card-active-offer" style="display: none; border: 2px solid #ef4444; background: #fff5f5;">
+        <div style="color: #b91c1c; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem;">
+          🚨 URGENT INCOMING BLOOD REQUEST
+        </div>
+        <p id="offer-summary" style="font-size: 0.875rem; color: #7f1d1d; margin-bottom: 0.75rem;">
+          A patient nearby requires an emergency transfusion.
+        </p>
+        <button class="btn btn-primary btn-block" onclick="openIncomingModal()">
+          View & Respond Now
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: EDIT DONOR PROFILE (REAL-TIME)     -->
+  <!-- ========================================== -->
+  <div id="modal-edit-profile" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.2rem;">Edit Donor Profile</h2>
+        <button onclick="closeEditProfileModal()" style="background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+      </div>
+
+      <form id="form-edit-profile" onsubmit="handleSaveProfile(event)">
+        <div class="form-group">
+          <label class="form-label" for="edit-name">Full Name</label>
+          <input type="text" id="edit-name" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-wa">WhatsApp Number</label>
+          <input type="tel" id="edit-wa" class="form-control" placeholder="017XXXXXXXX">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-blood">Blood Group</label>
+          <select id="edit-blood" class="form-control">
+            <option value="B+">B Positive (B+)</option>
+            <option value="O+">O Positive (O+)</option>
+            <option value="A+">A Positive (A+)</option>
+            <option value="AB+">AB Positive (AB+)</option>
+            <option value="B-">B Negative (B-)</option>
+            <option value="O-">O Negative (O-)</option>
+            <option value="A-">A Negative (A-)</option>
+            <option value="AB-">AB Negative (AB-)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-intent">Donation Preference</label>
+          <select id="edit-intent" class="form-control">
+            <option value="REGULAR">Regular Donor (Every 3-4 months)</option>
+            <option value="WHEN_NEEDED">When Needed (Nearby emergency calls)</option>
+            <option value="DONATE_LATER">Donate Later (Temporarily inactive)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-last-date">Last Donation Date</label>
+          <input type="date" id="edit-last-date" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-area">Area / District</label>
+          <input type="text" id="edit-area" class="form-control" placeholder="e.g. Panthapath, Dhaka">
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.25rem;">
+          <button type="submit" class="btn btn-primary btn-block" id="btn-save-profile">
+            Save Profile Changes
+          </button>
+          <button type="button" class="btn btn-outline" onclick="closeEditProfileModal()">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: URGENT INCOMING CALL-STYLE ALERT   -->
+  <!-- ========================================== -->
+  <div id="modal-incoming-alert" class="call-alert-overlay" style="display: none;">
+    <div class="call-alert-card">
+      <div style="color: #ef4444; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;">
+        ⚡ EMERGENCY BLOOD DISPATCH
+      </div>
+
+      <div class="countdown-badge" id="call-countdown">25s</div>
+
+      <h2 id="call-hospital" style="font-size: 1.35rem; margin-bottom: 0.25rem;">Square Hospital</h2>
+      <p id="call-patient" style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1.25rem;">Patient Emergency</p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; background: #0f172a; padding: 0.75rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem;">
+        <div>
+          <div style="font-size: 0.7rem; color: #64748b;">BLOOD GROUP</div>
+          <div id="call-blood" style="font-size: 1.35rem; font-weight: 800; color: #ef4444;">B+</div>
+        </div>
+        <div>
+          <div style="font-size: 0.7rem; color: #64748b;">EST. DISTANCE</div>
+          <div id="call-dist" style="font-size: 1.35rem; font-weight: 800; color: #38bdf8;">-- km</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+        <button class="btn btn-success btn-block" style="height: 52px; font-size: 1.05rem;" onclick="handleAcceptOffer()">
+          ✅ ACCEPT & COMMIT TO DONATE
+        </button>
+        <button class="btn btn-outline btn-block" style="background: transparent; color: #cbd5e1; border-color: #475569;" onclick="handleRejectOffer()">
+          Decline
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let activeDonorProfile = null;
+    let currentOffer = null;
+    let countdownInterval = null;
+
+    // View Switching
+    function showDashboard() {
+      document.getElementById('view-auth').style.display = 'none';
+      document.getElementById('view-dashboard').style.display = 'block';
+      document.getElementById('btn-nav-logout').style.display = 'inline-block';
+    }
+
+    function showAuth() {
+      document.getElementById('view-auth').style.display = 'block';
+      document.getElementById('view-dashboard').style.display = 'none';
+      document.getElementById('btn-nav-logout').style.display = 'none';
+      document.getElementById('nav-user-label').innerText = '';
+    }
+
+    function switchAuthTab(tab) {
+      const isReg = tab === 'reg';
+      document.getElementById('card-register').style.display = isReg ? 'block' : 'none';
+      document.getElementById('card-login').style.display = isReg ? 'none' : 'block';
+      
+      document.getElementById('tab-reg').style.borderColor = isReg ? 'var(--brand-primary)' : 'var(--border-input)';
+      document.getElementById('tab-reg').style.color = isReg ? 'var(--brand-primary)' : 'var(--text-muted)';
+      document.getElementById('tab-reg').style.background = isReg ? 'var(--brand-primary-light)' : '#ffffff';
+
+      document.getElementById('tab-login').style.borderColor = !isReg ? 'var(--brand-primary)' : 'var(--border-input)';
+      document.getElementById('tab-login').style.color = !isReg ? 'var(--brand-primary)' : 'var(--text-muted)';
+      document.getElementById('tab-login').style.background = !isReg ? 'var(--brand-primary-light)' : '#ffffff';
+    }
+
+    function selectIntent(intent) {
+      document.getElementById('reg-intent').value = intent;
+      const buttons = {
+        'REGULAR': document.getElementById('btn-intent-regular'),
+        'WHEN_NEEDED': document.getElementById('btn-intent-needed'),
+        'DONATE_LATER': document.getElementById('btn-intent-later')
+      };
+      for (const k in buttons) {
+        buttons[k].className = k === intent ? 'segment-btn active' : 'segment-btn';
+      }
+
+      const hints = {
+        'REGULAR': 'Ready to donate on schedule (every 3-4 months).',
+        'WHEN_NEEDED': 'Notify me if someone nearby is in critical need.',
+        'DONATE_LATER': 'Account kept on standby. You can switch to available anytime.'
+      };
+      document.getElementById('intent-hint').innerText = hints[intent] || '';
+    }
+
+    function toggleSamePhone() {
+      const isChecked = document.getElementById('reg-wa-same').checked;
+      const phoneVal = document.getElementById('reg-phone').value;
+      const waInput = document.getElementById('reg-wa');
+      if (isChecked) {
+        waInput.value = phoneVal;
+      }
+    }
+
+    function updateAreaCoordinates() {
+      const select = document.getElementById('reg-area');
+      const parts = select.value.split('|');
+      document.getElementById('reg-lat').value = parts[1];
+      document.getElementById('reg-lon').value = parts[2];
+    }
+
+    function fetchGPSLocation() {
+      const btn = document.getElementById('btn-gps');
+      if (!navigator.geolocation) {
+        showToast('Geolocation is not supported by your browser', true);
+        return;
+      }
+
+      btn.innerText = '⏳ Accessing Device Location...';
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          document.getElementById('reg-lat').value = pos.coords.latitude;
+          document.getElementById('reg-lon').value = pos.coords.longitude;
+          btn.innerText = `✓ Device GPS Acquired (${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)})`;
+          btn.style.borderColor = 'var(--state-success)';
+          btn.style.color = 'var(--state-success)';
+          showToast('GPS coordinates recorded!');
+        },
+        err => {
+          btn.innerText = '📍 Use Device GPS (Permission Denied)';
+          showToast('Please select your Area/District from the dropdown below.', false);
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+      );
+    }
+
+    // Register API Call
+    async function handleRegister(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit-reg');
+      btn.disabled = true;
+      btn.innerText = 'Registering Donor...';
+
+      const phone = document.getElementById('reg-phone').value.trim();
+      let wa = document.getElementById('reg-wa').value.trim();
+      if (!wa && document.getElementById('reg-wa-same').checked) {
+        wa = phone;
+      }
+
+      const areaParts = document.getElementById('reg-area').value.split('|');
+      const areaName = areaParts[0];
+
+      const payload = {
+        full_name: document.getElementById('reg-name').value.trim(),
+        phone: phone,
+        whatsapp_number: wa || phone,
+        blood_group: document.getElementById('reg-blood').value,
+        donation_intent: document.getElementById('reg-intent').value,
+        last_donation_date: document.getElementById('reg-last-date').value || null,
+        area_district: areaName,
+        latitude: parseFloat(document.getElementById('reg-lat').value) || 23.8103,
+        longitude: parseFloat(document.getElementById('reg-lon').value) || 90.4125,
+        address: `${areaName}, Bangladesh`,
+        password: document.getElementById('reg-pass').value
+      };
+
+      try {
+        const res = await apiRequest('/auth/register', 'POST', payload);
+        setToken(res.access_token);
+        showToast('✓ Registration successful! Welcome to Blood Hub.');
+        await loadDonorDashboard();
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Complete Donor Registration';
+      }
+    }
+
+    // Login API Call
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit-login');
+      btn.disabled = true;
+      btn.innerText = 'Signing In...';
+
+      const payload = {
+        phone: document.getElementById('login-phone').value.trim(),
+        password: document.getElementById('login-pass').value
+      };
+
+      try {
+        const res = await apiRequest('/auth/login', 'POST', payload);
+        setToken(res.access_token);
+        showToast('✓ Signed in successfully.');
+        await loadDonorDashboard();
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Sign In to Dashboard';
+      }
+    }
+
+    function handleLogout() {
+      clearToken();
+      activeDonorProfile = null;
+      showToast('Logged out.');
+      showAuth();
+    }
+
+    // Load Dashboard Data
+    async function loadDonorDashboard() {
+      const token = getToken();
+      if (!token) {
+        showAuth();
+        return;
+      }
+
+      try {
+        const profile = await apiRequest('/donors/profile');
+        activeDonorProfile = profile;
+        showDashboard();
+
+        document.getElementById('dash-name').innerText = profile.full_name || 'Donor';
+        document.getElementById('dash-phone').innerText = `Phone: ${profile.phone}`;
+        document.getElementById('dash-area').innerText = `📍 ${profile.area_district || profile.address || 'Dhaka'}`;
+        document.getElementById('dash-blood').innerText = profile.blood_group;
+        document.getElementById('nav-user-label').innerText = profile.full_name;
+
+        // Availability UI
+        renderAvailability(profile.availability_status);
+
+        // Donation Info
+        const intentLabels = {
+          'REGULAR': 'Regular Donor',
+          'WHEN_NEEDED': 'When Needed',
+          'DONATE_LATER': 'Donate Later'
+        };
+        document.getElementById('dash-intent').innerText = intentLabels[profile.donation_intent] || profile.donation_intent;
+        document.getElementById('dash-total').innerText = `${profile.total_donations || 0} times`;
+        document.getElementById('dash-last-date').innerText = profile.last_donation_date || 'None recorded';
+        document.getElementById('dash-wa').innerText = profile.whatsapp_number || profile.phone || 'None';
+
+        // Check for active incoming offers
+        pollIncomingOffers();
+      } catch (err) {
+        clearToken();
+        showAuth();
+      }
+    }
+
+    function renderAvailability(status) {
+      const isAvail = status === 'AVAILABLE';
+      const box = document.getElementById('avail-box');
+      const title = document.getElementById('avail-title');
+      const sub = document.getElementById('avail-sub');
+      const btn = document.getElementById('btn-avail-action');
+
+      if (isAvail) {
+        box.className = 'availability-box available';
+        title.innerText = '🟢 AVAILABLE TO DONATE';
+        title.style.color = '#166534';
+        sub.innerText = 'You can receive emergency blood requests nearby. Tap to pause.';
+        sub.style.color = '#15803d';
+        btn.innerText = 'Pause';
+      } else {
+        box.className = 'availability-box unavailable';
+        title.innerText = '⚪ NOT AVAILABLE NOW';
+        title.style.color = '#475569';
+        sub.innerText = 'Matching is paused. Tap to make yourself available.';
+        sub.style.color = '#64748b';
+        btn.innerText = 'Make Available';
+      }
+    }
+
+    async function toggleAvailability() {
+      if (!activeDonorProfile) return;
+      const nextStatus = activeDonorProfile.availability_status === 'AVAILABLE' ? 'UNAVAILABLE' : 'AVAILABLE';
+      try {
+        const res = await apiRequest('/donors/availability', 'PUT', { availability_status: nextStatus });
+        activeDonorProfile.availability_status = res.availability_status;
+        renderAvailability(res.availability_status);
+        showToast(`Status updated to ${res.availability_status}`);
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    // Edit Profile Modal Handling
+    function openEditProfileModal() {
+      if (!activeDonorProfile) return;
+      document.getElementById('edit-name').value = activeDonorProfile.full_name || '';
+      document.getElementById('edit-wa').value = activeDonorProfile.whatsapp_number || '';
+      document.getElementById('edit-blood').value = activeDonorProfile.blood_group || 'B+';
+      document.getElementById('edit-intent').value = activeDonorProfile.donation_intent || 'REGULAR';
+      document.getElementById('edit-last-date').value = activeDonorProfile.last_donation_date || '';
+      document.getElementById('edit-area').value = activeDonorProfile.area_district || '';
+      document.getElementById('modal-edit-profile').style.display = 'flex';
+    }
+
+    function closeEditProfileModal() {
+      document.getElementById('modal-edit-profile').style.display = 'none';
+    }
+
+    async function handleSaveProfile(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-save-profile');
+      btn.disabled = true;
+      btn.innerText = 'Saving...';
+
+      const payload = {
+        full_name: document.getElementById('edit-name').value.trim(),
+        whatsapp_number: document.getElementById('edit-wa').value.trim(),
+        blood_group: document.getElementById('edit-blood').value,
+        donation_intent: document.getElementById('edit-intent').value,
+        last_donation_date: document.getElementById('edit-last-date').value || null,
+        area_district: document.getElementById('edit-area').value.trim()
+      };
+
+      try {
+        const updated = await apiRequest('/donors/profile', 'PUT', payload);
+        activeDonorProfile = updated;
+        closeEditProfileModal();
+        showToast('✓ Profile updated in database!');
+        loadDonorDashboard();
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Save Profile Changes';
+      }
+    }
+
+    // Incoming Request Alerting Logic
+    async function pollIncomingOffers() {
+      if (!getToken()) return;
+      try {
+        const offers = await apiRequest('/donors/offers');
+        const offerCard = document.getElementById('card-active-offer');
+        if (offers && offers.length > 0) {
+          const offer = offers[0];
+          currentOffer = offer;
+          offerCard.style.display = 'block';
+          document.getElementById('offer-summary').innerText = `Emergency ${offer.blood_group} requested at ${offer.hospital_name} (${offer.distance_km || 1.2} km away).`;
+          
+          // If modal not open yet, pop it open with emergency chime
+          if (document.getElementById('modal-incoming-alert').style.display === 'none') {
+            openIncomingModal();
+          }
+        } else {
+          offerCard.style.display = 'none';
+          if (document.getElementById('modal-incoming-alert').style.display === 'flex') {
+            closeIncomingModal();
+          }
+        }
+      } catch (e) {}
+    }
+
+    function openIncomingModal() {
+      if (!currentOffer) return;
+      document.getElementById('call-hospital').innerText = currentOffer.hospital_name || 'Hospital Facility';
+      document.getElementById('call-patient').innerText = `Patient: ${currentOffer.patient_name || 'Urgent Transfusion'}`;
+      document.getElementById('call-blood').innerText = currentOffer.blood_group || 'B+';
+      document.getElementById('call-dist').innerText = `${currentOffer.distance_km || 1.2} km`;
+
+      document.getElementById('modal-incoming-alert').style.display = 'flex';
+      playEmergencyChime();
+
+      let seconds = currentOffer.seconds_remaining || 25;
+      document.getElementById('call-countdown').innerText = `${seconds}s`;
+
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        seconds--;
+        if (seconds <= 0) {
+          clearInterval(countdownInterval);
+          closeIncomingModal();
+        } else {
+          document.getElementById('call-countdown').innerText = `${seconds}s`;
+        }
+      }, 1000);
+    }
+
+    function closeIncomingModal() {
+      stopEmergencyChime();
+      if (countdownInterval) clearInterval(countdownInterval);
+      document.getElementById('modal-incoming-alert').style.display = 'none';
+    }
+
+    async function handleAcceptOffer() {
+      if (!currentOffer) return;
+      try {
+        const res = await apiRequest(`/donors/offers/${currentOffer.id}/accept`, 'POST');
+        closeIncomingModal();
+        alert('🎉 Assignment Confirmed! You have been connected to this emergency request.');
+        showToast('Assignment locked! Please travel safely.');
+        loadDonorDashboard();
+      } catch (err) {
+        closeIncomingModal();
+        alert(err.message);
+        showToast(err.message, true);
+        loadDonorDashboard();
+      }
+    }
+
+    async function handleRejectOffer() {
+      if (!currentOffer) return;
+      try {
+        await apiRequest(`/donors/offers/${currentOffer.id}/reject`, 'POST', {
+          offer_id: currentOffer.id,
+          rejection_reason: 'Donor unavailable right now'
+        });
+        closeIncomingModal();
+        showToast('Offer declined.');
+        loadDonorDashboard();
+      } catch (err) {
+        closeIncomingModal();
+      }
+    }
+
+    // Startup
+    window.addEventListener('load', () => {
+      loadDonorDashboard();
+      setInterval(pollIncomingOffers, 4000);
+    });
+  </script>
+</body>
+</html>

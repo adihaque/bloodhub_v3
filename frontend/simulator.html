@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local Multi-User Dispatch Simulator - Blood Hub</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <header>
+    <a href="/" class="brand">🩸 Blood Hub <span class="badge">Dispatch Simulator</span></a>
+    <nav>
+      <a href="/simulator" class="active">Simulator</a>
+      <a href="/requester">Requester</a>
+      <a href="/donor">Donor</a>
+      <a href="/admin">Admin</a>
+    </nav>
+  </header>
+
+  <div class="container">
+
+    <!-- Control Toolbar -->
+    <div class="card" style="background: #1e293b; color: white;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.3rem;">Interactive Multi-User Simulation Control Deck</h2>
+          <p style="font-size: 0.85rem; color: #94a3b8;">Exercises real server-side transactions, wave dispatch, and atomic row locking.</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="btn btn-outline" style="background: #334155; color: white; border: none;" onclick="seedEnvironment()">
+            🌱 1. Seed Accounts
+          </button>
+          <button class="btn btn-primary" onclick="triggerEmergencyRequest()">
+            🚨 2. Trigger Emergency Request
+          </button>
+          <button class="btn btn-success" onclick="testConcurrencyRace()">
+            ⚡ 3. Test Simultaneous Accept (Race Condition)
+          </button>
+          <button class="btn btn-danger" onclick="timeoutWave()">
+            ⏳ 4. Timeout Wave (Escalate)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Concurrency Race Condition Result Box -->
+    <div id="race-result-box" class="card" style="display: none; border-left: 4px solid #f59e0b; background: #fffbeb;">
+      <h3 style="color: #b45309; margin-bottom: 0.5rem;">⚡ Concurrency Test Execution Verified</h3>
+      <p style="font-size: 0.9rem; color: #78350f;" id="race-summary">...</p>
+      <div class="grid-2" style="margin-top: 0.75rem;">
+        <div style="background: #dcfce7; padding: 0.75rem; border-radius: 8px; border: 1px solid #86efac;">
+          <strong style="color: #166534;">🏆 WINNING DONOR (Lock Acquired)</strong>
+          <div id="race-winner-details" style="font-size: 0.85rem; color: #14532d; margin-top: 0.25rem;">--</div>
+        </div>
+        <div style="background: #fee2e2; padding: 0.75rem; border-radius: 8px; border: 1px solid #fca5a5;">
+          <strong style="color: #991b1b;">❌ LOSING DONOR (Atomically Rejected)</strong>
+          <div id="race-loser-details" style="font-size: 0.85rem; color: #7f1d1d; margin-top: 0.25rem;">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulated Donor Devices View -->
+    <h3 style="margin-bottom: 0.75rem; font-size: 1.15rem;">Simulated Donor Mobile Screens</h3>
+    <div class="grid-3" id="donors-grid">
+      <!-- Donor A -->
+      <div class="card" id="card-donor-a" style="border: 2px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <strong>Donor A (Tanvir Ahmed)</strong>
+          <span class="badge-blood">B+</span>
+        </div>
+        <p style="font-size: 0.8rem; color: #64748b;">Panthapath (0.04km from Square Hospital)</p>
+        <p style="font-size: 0.85rem; margin: 0.5rem 0;">Status: <span id="status-donor-a" class="badge-status active">AVAILABLE</span></p>
+
+        <div id="offer-box-a" style="display: none; background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 8px; margin: 0.75rem 0;">
+          <div style="color: #dc2626; font-weight: 700; font-size: 0.85rem;">🚨 INCOMING URGENT OFFER</div>
+          <p style="font-size: 0.8rem; color: #991b1b;">Emergency B+ Needed at Square Hospital</p>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <button class="btn btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" onclick="acceptDonor('+8801722222222')">Accept</button>
+            <button class="btn btn-outline" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" onclick="rejectDonor('+8801722222222')">Decline</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donor B -->
+      <div class="card" id="card-donor-b" style="border: 2px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <strong>Donor B (Sabbir Hossain)</strong>
+          <span class="badge-blood">B+</span>
+        </div>
+        <p style="font-size: 0.8rem; color: #64748b;">Dhanmondi (1.1km from Square Hospital)</p>
+        <p style="font-size: 0.85rem; margin: 0.5rem 0;">Status: <span id="status-donor-b" class="badge-status active">AVAILABLE</span></p>
+
+        <div id="offer-box-b" style="display: none; background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 8px; margin: 0.75rem 0;">
+          <div style="color: #dc2626; font-weight: 700; font-size: 0.85rem;">🚨 INCOMING URGENT OFFER</div>
+          <p style="font-size: 0.8rem; color: #991b1b;">Emergency B+ Needed at Square Hospital</p>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <button class="btn btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" onclick="acceptDonor('+8801733333333')">Accept</button>
+            <button class="btn btn-outline" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" onclick="rejectDonor('+8801733333333')">Decline</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donor C -->
+      <div class="card" id="card-donor-c" style="border: 2px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <strong>Donor C (Nayeem Islam)</strong>
+          <span class="badge-blood" style="background: #0284c7;">O+ [Compat]</span>
+        </div>
+        <p style="font-size: 0.8rem; color: #64748b;">Shahbag (2.1km from Square Hospital)</p>
+        <p style="font-size: 0.85rem; margin: 0.5rem 0;">Status: <span id="status-donor-c" class="badge-status active">AVAILABLE</span></p>
+
+        <div id="offer-box-c" style="display: none; background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 8px; margin: 0.75rem 0;">
+          <div style="color: #dc2626; font-weight: 700; font-size: 0.85rem;">🚨 INCOMING URGENT OFFER</div>
+          <p style="font-size: 0.8rem; color: #991b1b;">Emergency B+ Needed at Square Hospital</p>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <button class="btn btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" onclick="acceptDonor('+8801744444444')">Accept</button>
+            <button class="btn btn-outline" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" onclick="rejectDonor('+8801744444444')">Decline</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Request & Waves State -->
+    <div class="card">
+      <h3 style="font-size: 1.15rem; margin-bottom: 0.75rem;">Active Dispatch Engine Pipeline</h3>
+      <div id="requests-pipeline" style="font-size: 0.9rem; color: #64748b;">
+        No active blood emergency request triggered yet. Click "2. Trigger Emergency Request" above.
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let activeReqId = null;
+
+    async function seedEnvironment() {
+      try {
+        const res = await apiRequest('/simulator/seed', 'POST');
+        showToast('🌱 Seeded Donors A/B/C/D, Requester, Admin & Blood Banks.');
+        document.getElementById('race-result-box').style.display = 'none';
+        refreshSimulatorState();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    async function triggerEmergencyRequest() {
+      try {
+        const res = await apiRequest('/simulator/trigger-request', 'POST');
+        activeReqId = res.request_id;
+        showToast(`🚨 Wave 1 Dispatched for ${res.blood_group} at ${res.hospital}!`);
+        refreshSimulatorState();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    async function acceptDonor(phone) {
+      try {
+        const res = await apiRequest(`/simulator/donor-accept?donor_phone=${encodeURIComponent(phone)}`, 'POST');
+        showToast('✅ Donor accepted! Assignment locked.');
+        refreshSimulatorState();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    async function testConcurrencyRace() {
+      try {
+        const res = await apiRequest('/simulator/simultaneous-accept', 'POST');
+        document.getElementById('race-result-box').style.display = 'block';
+        document.getElementById('race-summary').innerHTML = `
+          <strong>Concurrency Guarantee Verified:</strong> ${res.guarantee_verified ? '✅ YES - STRICTLY 1 WINNER' : '❌ FAILED'}<br>
+          Two donors submitted acceptance at the exact same millisecond.
+        `;
+        document.getElementById('race-winner-details').innerHTML = `
+          Status: <strong>${res.winner_details.code}</strong><br>
+          Message: ${res.winner_details.message}<br>
+          Thread: ${res.winner_details.thread}
+        `;
+        document.getElementById('race-loser-details').innerHTML = `
+          Status: <strong>${res.loser_details.code}</strong><br>
+          Message: ${res.loser_details.message}<br>
+          Thread: ${res.loser_details.thread}
+        `;
+        showToast('⚡ Concurrency test completed!');
+        refreshSimulatorState();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    async function timeoutWave() {
+      if (!activeReqId) {
+        showToast('Trigger an emergency request first!', true);
+        return;
+      }
+      try {
+        const res = await apiRequest(`/simulator/wave-timeout?request_id=${activeReqId}`, 'POST');
+        showToast(`⏳ Wave escalated! Now on Wave ${res.wave_number} (Radius: ${res.radius_km}km)`);
+        refreshSimulatorState();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    async function refreshSimulatorState() {
+      try {
+        const state = await apiRequest('/simulator/state');
+        
+        // Update donor cards
+        state.donors.forEach(d => {
+          let cardId = null, boxId = null, statusId = null;
+          if (d.phone.endsWith('222222')) { cardId = 'card-donor-a'; boxId = 'offer-box-a'; statusId = 'status-donor-a'; }
+          else if (d.phone.endsWith('333333')) { cardId = 'card-donor-b'; boxId = 'offer-box-b'; statusId = 'status-donor-b'; }
+          else if (d.phone.endsWith('444444')) { cardId = 'card-donor-c'; boxId = 'offer-box-c'; statusId = 'status-donor-c'; }
+
+          if (cardId) {
+            const statusEl = document.getElementById(statusId);
+            statusEl.innerText = d.status;
+            statusEl.className = `badge-status ${d.status === 'AVAILABLE' ? 'active' : (d.status === 'OFFERED' ? 'awaiting' : 'assigned')}`;
+
+            const box = document.getElementById(boxId);
+            if (d.active_offer_id) {
+              box.style.display = 'block';
+              document.getElementById(cardId).style.borderColor = '#ef4444';
+            } else {
+              box.style.display = 'none';
+              document.getElementById(cardId).style.borderColor = 'var(--border)';
+            }
+          }
+        });
+
+        // Update pipeline
+        const pipeEl = document.getElementById('requests-pipeline');
+        if (state.requests.length === 0) {
+          pipeEl.innerText = 'No active blood emergency request triggered yet.';
+        } else {
+          const r = state.requests[0];
+          activeReqId = r.id;
+          pipeEl.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>${r.patient_name}</strong> - Need ${r.units_needed} unit(s) of <span class="badge-blood">${r.blood_group}</span> at ${r.hospital_name}
+                <div style="margin-top: 0.35rem;">
+                  Status: <span class="badge-status ${r.status.toLowerCase()}">${r.status}</span> &bull; Current Wave: <strong>Wave ${r.current_wave}</strong> &bull; Fulfilled: ${r.units_fulfilled}/${r.units_needed}
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #475569;">
+              Dispatched Offers: ${r.offers.map(o => `Offer ${o.offer_id.slice(0, 8)} (${o.status})`).join(', ') || 'None'}
+            </div>
+          `;
+        }
+
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    window.addEventListener('load', () => {
+      seedEnvironment();
+      setInterval(refreshSimulatorState, 3000);
+    });
+  </script>
+</body>
+</html>

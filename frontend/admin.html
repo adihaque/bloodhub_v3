@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Blood Hub</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <div class="env-banner">
+    <span>System Administration Portal</span>
+    <span class="env-tag pilot" id="admin-env-badge">PILOT</span>
+  </div>
+
+  <header>
+    <a href="/" class="brand">Blood Hub <span class="brand-badge">Admin</span></a>
+    <nav>
+      <a href="/admin" class="active">Overview</a>
+      <a href="/donor">Donor Portal</a>
+      <a href="/requester">Requester</a>
+      <a href="javascript:void(0)" onclick="handleAdminLogout()" style="color: #b91c1c;">Log out</a>
+    </nav>
+  </header>
+
+  <div class="container-wide">
+
+    <!-- Login Card if not authenticated as Admin -->
+    <div class="card" id="card-admin-login" style="max-width: 420px; margin: 2rem auto; display: none;">
+      <h2 style="font-size: 1.3rem; margin-bottom: 0.35rem;">Administrator Login</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        Log in with your administrator phone and password.
+      </p>
+
+      <form onsubmit="handleAdminLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Admin Phone Number</label>
+          <input type="tel" id="admin-login-phone" class="form-control" value="+8801700000000" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="admin-login-pass" class="form-control" value="admin123" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Sign In as Admin</button>
+      </form>
+    </div>
+
+    <!-- Admin Content (Visible when authenticated) -->
+    <div id="admin-content" style="display: none;">
+      
+      <!-- Operational KPI Cards -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="card" style="margin-bottom: 0; border-left: 4px solid var(--state-success);">
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-subtle);">AVAILABLE DONORS</div>
+          <div id="stat-avail-donors" style="font-size: 1.8rem; font-weight: 800; color: #166534; margin-top: 0.25rem;">--</div>
+        </div>
+        <div class="card" style="margin-bottom: 0; border-left: 4px solid var(--brand-primary);">
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-subtle);">TOTAL REGISTERED DONORS</div>
+          <div id="stat-total-donors" style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 0.25rem;">--</div>
+        </div>
+        <div class="card" style="margin-bottom: 0; border-left: 4px solid #3b82f6;">
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-subtle);">ACTIVE BLOOD REQUESTS</div>
+          <div id="stat-active-reqs" style="font-size: 1.8rem; font-weight: 800; color: #1d4ed8; margin-top: 0.25rem;">--</div>
+        </div>
+        <div class="card" style="margin-bottom: 0; border-left: 4px solid #8b5cf6;">
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-subtle);">ACTIVE DISPATCH WAVES</div>
+          <div id="stat-active-waves" style="font-size: 1.8rem; font-weight: 800; color: #6d28d9; margin-top: 0.25rem;">--</div>
+        </div>
+      </div>
+
+      <!-- Real Registered Donors Directory -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <h2 style="font-size: 1.2rem;">Registered Real Donors</h2>
+            <p style="font-size: 0.825rem; color: var(--text-subtle);">Persistent database records of registered volunteer donors.</p>
+          </div>
+          <button class="btn btn-outline" style="height: 38px; min-height: 38px; font-size: 0.85rem;" onclick="loadAdminData()">Refresh</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+              <tr style="border-bottom: 1.5px solid var(--border-input); text-align: left; color: var(--text-subtle);">
+                <th style="padding: 0.6rem;">Name</th>
+                <th style="padding: 0.6rem;">Blood</th>
+                <th style="padding: 0.6rem;">Phone / WhatsApp</th>
+                <th style="padding: 0.6rem;">Area</th>
+                <th style="padding: 0.6rem;">Preference</th>
+                <th style="padding: 0.6rem;">Availability</th>
+                <th style="padding: 0.6rem;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="donors-tbody">
+              <tr><td colspan="7" style="padding: 2rem; text-align: center; color: var(--text-subtle);">Loading registered donors...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Audit Log Trail -->
+      <div class="card">
+        <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem;">Platform Audit Trail</h3>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem;">
+            <thead>
+              <tr style="border-bottom: 1.5px solid var(--border-input); text-align: left; color: var(--text-subtle);">
+                <th style="padding: 0.5rem;">Timestamp</th>
+                <th style="padding: 0.5rem;">Action</th>
+                <th style="padding: 0.5rem;">Resource</th>
+                <th style="padding: 0.5rem;">Details</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody">
+              <tr><td colspan="4" style="padding: 1.5rem; text-align: center; color: var(--text-subtle);">Loading audit records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    async function initAdmin() {
+      const token = getToken();
+      if (!token) {
+        document.getElementById('card-admin-login').style.display = 'block';
+        document.getElementById('admin-content').style.display = 'none';
+        return;
+      }
+      loadAdminData();
+    }
+
+    async function handleAdminLogin(e) {
+      e.preventDefault();
+      const phone = document.getElementById('admin-login-phone').value.trim();
+      const pass = document.getElementById('admin-login-pass').value;
+
+      try {
+        const res = await apiRequest('/auth/login', 'POST', { phone: phone, password: pass });
+        setToken(res.access_token);
+        document.getElementById('card-admin-login').style.display = 'none';
+        showToast('✓ Admin authentication successful.');
+        loadAdminData();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    function handleAdminLogout() {
+      clearToken();
+      document.getElementById('card-admin-login').style.display = 'block';
+      document.getElementById('admin-content').style.display = 'none';
+      showToast('Logged out.');
+    }
+
+    async function loadAdminData() {
+      try {
+        const metrics = await apiRequest('/admin/metrics');
+        document.getElementById('admin-content').style.display = 'block';
+        document.getElementById('card-admin-login').style.display = 'none';
+
+        document.getElementById('admin-env-badge').innerText = metrics.active_environment.toUpperCase();
+        document.getElementById('stat-avail-donors').innerText = metrics.available_donors;
+        document.getElementById('stat-total-donors').innerText = metrics.total_donors;
+        document.getElementById('stat-active-reqs').innerText = metrics.active_requests;
+        document.getElementById('stat-active-waves').innerText = metrics.active_waves;
+
+        // Load Donors
+        const donors = await apiRequest('/admin/donors');
+        const dtbody = document.getElementById('donors-tbody');
+        if (donors.length === 0) {
+          dtbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-subtle);">No real donors registered in the database yet.</td></tr>';
+        } else {
+          dtbody.innerHTML = donors.map(d => `
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 0.65rem;"><strong>${d.full_name}</strong></td>
+              <td style="padding: 0.65rem;"><span class="blood-pill" style="font-size: 0.85rem; padding: 0.15rem 0.5rem;">${d.blood_group}</span></td>
+              <td style="padding: 0.65rem;">
+                <div>📞 ${d.phone}</div>
+                ${d.whatsapp_number && d.whatsapp_number !== d.phone ? `<div style="font-size: 0.775rem; color: #15803d;">💬 ${d.whatsapp_number}</div>` : ''}
+              </td>
+              <td style="padding: 0.65rem;">${d.area_district || 'Dhaka'}</td>
+              <td style="padding: 0.65rem;">${d.donation_intent}</td>
+              <td style="padding: 0.65rem;">
+                <span class="env-tag ${d.availability_status === 'AVAILABLE' ? 'pilot' : 'dev'}">${d.availability_status}</span>
+              </td>
+              <td style="padding: 0.65rem;">
+                ${d.is_active ? `
+                  <button class="btn btn-outline" style="height: 32px; min-height: 32px; padding: 0 0.6rem; font-size: 0.775rem; color: #b91c1c;" onclick="suspendDonor('${d.user_id}')">Suspend</button>
+                ` : `
+                  <button class="btn btn-outline" style="height: 32px; min-height: 32px; padding: 0 0.6rem; font-size: 0.775rem; color: #15803d;" onclick="activateDonor('${d.user_id}')">Activate</button>
+                `}
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        // Load Audit Logs
+        const logs = await apiRequest('/admin/audit-logs?limit=15');
+        const atbody = document.getElementById('audit-tbody');
+        if (logs.length === 0) {
+          atbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: var(--text-subtle);">No audit logs yet.</td></tr>';
+        } else {
+          atbody.innerHTML = logs.map(l => `
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 0.5rem; color: var(--text-subtle);">${l.created_at.slice(0, 19).replace('T', ' ')}</td>
+              <td style="padding: 0.5rem;"><strong>${l.action}</strong></td>
+              <td style="padding: 0.5rem;">${l.resource_type}</td>
+              <td style="padding: 0.5rem; color: var(--text-muted);">${l.details || ''}</td>
+            </tr>
+          `).join('');
+        }
+
+      } catch (err) {
+        document.getElementById('card-admin-login').style.display = 'block';
+        document.getElementById('admin-content').style.display = 'none';
+      }
+    }
+
+    async function suspendDonor(userId) {
+      if (!confirm('Suspend this donor account?')) return;
+      try {
+        await apiRequest(`/admin/users/${userId}/suspend`, 'PUT');
+        showToast('User suspended.');
+        loadAdminData();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    async function activateDonor(userId) {
+      try {
+        await apiRequest(`/admin/users/${userId}/activate`, 'PUT');
+        showToast('User activated.');
+        loadAdminData();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    window.addEventListener('load', initAdmin);
+  </script>
+</body>
+</html>

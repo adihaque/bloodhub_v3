@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blood Hub — Emergency Blood Donation Coordination</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <div class="env-banner">
+    <span>Live Platform Status: <strong>Ready for Pilot Donors</strong></span>
+    <span class="env-tag pilot" id="env-badge">PILOT</span>
+  </div>
+
+  <header>
+    <a href="/" class="brand">
+      Blood Hub <span class="brand-badge">Bangladesh</span>
+    </a>
+    <nav>
+      <a href="/donor">Donor App</a>
+      <a href="/requester">Requester</a>
+      <a href="/admin">Admin</a>
+    </nav>
+  </header>
+
+  <div class="container-wide">
+
+    <!-- Hero Card -->
+    <div class="card" style="text-align: center; padding: 2.5rem 1.25rem; background: #ffffff;">
+      <span class="brand-badge" style="background: var(--brand-primary-light); color: var(--brand-primary); font-size: 0.8rem; padding: 0.25rem 0.75rem;">
+        Voluntary Coordination Network
+      </span>
+      <h1 style="font-size: 2.1rem; margin: 0.75rem 0 0.5rem 0; color: #0f172a;">
+        Targeted Blood Dispatch for Bangladesh
+      </h1>
+      <p style="font-size: 1rem; color: var(--text-muted); max-width: 580px; margin: 0 auto 1.5rem auto;">
+        Connecting patients in Dhaka and divisional hospitals with compatible, verified voluntary blood donors nearby through concentric wave dispatch.
+      </p>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; max-width: 420px; margin: 0 auto;">
+        <a href="/donor" class="btn btn-primary btn-block" style="font-size: 1.05rem;">
+          🩸 Register as a Blood Donor
+        </a>
+        <a href="/requester" class="btn btn-outline btn-block">
+          Request Blood for a Patient
+        </a>
+      </div>
+    </div>
+
+    <!-- Core Philosophy Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+      <div class="card" style="margin-bottom: 0;">
+        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">⚡ Wave Dispatch Model</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          Instead of panic broadcasting to hundreds at once, requests ripple outward in proximity waves (5km &rarr; 8km &rarr; 15km &rarr; 25km).
+        </p>
+      </div>
+
+      <div class="card" style="margin-bottom: 0;">
+        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">🔒 Zero Double Claims</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          Atomic concurrency locking ensures only one donor gets assigned when multiple people tap Accept simultaneously.
+        </p>
+      </div>
+
+      <div class="card" style="margin-bottom: 0;">
+        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">🛡️ Privacy Protection</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          Donor residential coordinates are protected and fuzzed. Phone numbers are only shared after a match is confirmed.
+        </p>
+      </div>
+    </div>
+
+    <!-- Verified Institutional Fallback Directory -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <div>
+          <h2 style="font-size: 1.15rem;">Institutional Blood Banks & Helplines</h2>
+          <p style="font-size: 0.825rem; color: var(--text-subtle);">Direct contact points when voluntary donors are unavailable.</p>
+        </div>
+        <span class="env-tag pilot">24/7 Monitored</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.75rem;">
+        <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
+          <strong>National Emergency Services</strong>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Emergency Police / Ambulance / Fire</p>
+          <p style="font-size: 0.85rem; font-weight: 700; color: #b91c1c; margin-top: 0.25rem;">📞 Dial 999</p>
+        </div>
+
+        <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
+          <strong>Shastho Batayon (National Health)</strong>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">24/7 Government Medical Consultation</p>
+          <p style="font-size: 0.85rem; font-weight: 700; color: #15803d; margin-top: 0.25rem;">📞 Dial 16263</p>
+        </div>
+
+        <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
+          <strong>Quantum Voluntary Blood Lab</strong>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Shantinagar, Dhaka</p>
+          <p style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-top: 0.25rem;">📞 +8801714010869</p>
+        </div>
+
+        <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
+          <strong>Red Crescent Blood Center</strong>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Mohammadpur, Dhaka</p>
+          <p style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-top: 0.25rem;">📞 +880248121182</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Medical Notice -->
+    <div style="background: #fffbeb; border: 1px solid #fef3c7; padding: 0.85rem 1rem; border-radius: var(--radius-sm); font-size: 0.825rem; color: #92400e;">
+      ⚠️ <strong>Medical Disclaimer:</strong> Blood Hub is a logistical coordination platform, NOT a medical clearance or diagnostic system. Final screening for mandatory TTIs (HIV, HBV, HCV, Syphilis, Malaria) and physical cross-matching must be performed by registered medical personnel at the receiving facility under the Safe Blood Transfusion Act.
+    </div>
+
+  </div>
+
+  <footer style="text-align: center; padding: 1.5rem; color: var(--text-subtle); font-size: 0.8rem;">
+    Blood Hub Bangladesh &bull; Autonomous Blood Coordination Platform
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
