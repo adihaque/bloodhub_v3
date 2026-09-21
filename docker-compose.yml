@@ -11,7 +11,14 @@ services:
       - APP_ENV=production
       - DEBUG=false
       - SECRET_KEY=CHANGE_ME_PRODUCTION_SECRET_KEY_MIN_32_CHARS
-      - DATABASE_URL=sqlite:////data/bloodhub.db
+      - DATABASE_BACKEND=${DATABASE_BACKEND:-sqlite}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////data/bloodhub.db}
+      - NEON_DATABASE_URL=${NEON_DATABASE_URL:-}
+      - REDIS_ENABLED=${REDIS_ENABLED:-false}
+      - UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL:-}
+      - UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN:-}
+      - FCM_PROVIDER=${FCM_PROVIDER:-mock}
+      - SMS_PROVIDER=${SMS_PROVIDER:-mock}
     volumes:
       - bloodhub_data:/data
     healthcheck:
@@ -27,7 +34,8 @@ services:
     command: ["python3", "scripts/run_worker.py"]
     environment:
       - APP_ENV=production
-      - DATABASE_URL=sqlite:////data/bloodhub.db
+      - DATABASE_BACKEND=${DATABASE_BACKEND:-sqlite}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////data/bloodhub.db}
       - WORKER_POLL_INTERVAL=5
     volumes:
       - bloodhub_data:/data

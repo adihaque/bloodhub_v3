@@ -16,6 +16,9 @@ This guide describes deploying Blood Hub on a standard Ubuntu Linux VPS (Digital
    cp .env.example .env
    # Update SECRET_KEY with: openssl rand -hex 32
    ```
+   For production, set `DATABASE_BACKEND=postgres` and `DATABASE_URL` (or
+   `NEON_DATABASE_URL`) to the Neon pooled connection string. SQLite remains
+   the default local backend. Upstash Redis is optional (`REDIS_ENABLED=true`).
 3. Build and launch containers:
    ```bash
    docker compose up -d --build
@@ -28,6 +31,13 @@ This guide describes deploying Blood Hub on a standard Ubuntu Linux VPS (Digital
    ```bash
    curl http://localhost:8000/health
    ```
+
+### Device sessions
+
+Login and registration return an opaque `refresh_token`. Call
+`/api/v1/auth/refresh` to rotate it; the previous token is revoked. Logout
+revokes one token, or all sessions when no token is supplied. Only SHA-256
+token hashes are persisted.
 
 ---
 

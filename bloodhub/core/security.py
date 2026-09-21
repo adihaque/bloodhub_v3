@@ -22,6 +22,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except Exception:
         return False
 
+def hash_session_token(token: str) -> str:
+    """Hash an opaque refresh token before it is stored."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+def generate_session_token() -> str:
+    return secrets.token_urlsafe(settings.SESSION_TOKEN_BYTES)
+
 def _b64_url_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b'=').decode('utf-8')
 

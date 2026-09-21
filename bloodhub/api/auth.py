@@ -1,12 +1,42 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from bloodhub.core.database import get_db, DatabaseSession
-from bloodhub.core.security import hash_password, verify_password, create_access_token
-from bloodhub.models.models import User, DonorProfile, RequesterProfile, AuditLog
-from bloodhub.schemas.schemas import UserRegister, UserLogin, Token, UserOut
+from bloodhub.core.config import settings
+from bloodhub.core.security import (
+    hash_password, verify_password, create_access_token,
+    generate_session_token, hash_session_token,
+)
+from bloodhub.models.models import User, DeviceSession, DonorProfile, RequesterProfile, AuditLog
+from bloodhub.schemas.schemas import (
+    UserRegister, UserLogin, Token, UserOut, RefreshTokenRequest, LogoutRequest
+)
 from bloodhub.api.deps import get_current_user
 from bloodhub.domain.compatibility import normalize_blood_group
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+def _create_session(user, db, request=None, device_id=None):
+    raw = generate_session_token()
+    now = datetime.utcnow()
+    session = DeviceSession(
+        user_id=user.id,
+        token_hash=hash_session_token(raw),
+        device_id=device_id,
+        user_agent=request.headers.get("user-agent") if request else None,
+        ip_address=request.client.host if request and request.client else None,
+        last_used_at=now.isoformat(),
+        expires_at=(now + timedelta(days=settings.SESSION_TOKEN_EXPIRE_DAYS)).isoformat(),
+    )
+    db.add(session)
+    return raw
+
+def _token_response(user, db, request=None, device_id=None):
+    return {
+        "access_token": create_access_token({"sub": user.id, "role": user.role}),
+        "token_type": "Bearer",
+        "refresh_token": _create_session(user, db, request, device_id),
+        "user": user.to_dict(),
+    }
 
 def normalize_bd_phone(phone: str) -> str:
     """Standardizes Bangladeshi mobile numbers into +8801XXXXXXXXX format."""
@@ -20,7 +50,7 @@ def normalize_bd_phone(phone: str) -> str:
     return p
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-def register_user(payload: UserRegister, db: DatabaseSession = Depends(get_db)):
+def register_user(payload: UserRegister, request: Request, db: DatabaseSession = Depends(get_db)):
     clean_phone = normalize_bd_phone(payload.phone)
     if len(clean_phone) < 11:
         raise HTTPException(
@@ -108,15 +138,12 @@ def register_user(payload: UserRegister, db: DatabaseSession = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    token = create_access_token({"sub": new_user.id, "role": new_user.role})
-    return {
-        "access_token": token,
-        "token_type": "Bearer",
-        "user": new_user.to_dict()
-    }
+    result = _token_response(new_user, db, request)
+    db.commit()
+    return result
 
 @router.post("/login", response_model=Token)
-def login_user(payload: UserLogin, db: DatabaseSession = Depends(get_db)):
+def login_user(payload: UserLogin, request: Request, db: DatabaseSession = Depends(get_db)):
     clean_phone = normalize_bd_phone(payload.phone)
     user = db.query(User).filter_by(phone=clean_phone).first()
     if not user or not verify_password(payload.password, user.password_hash):
@@ -131,12 +158,53 @@ def login_user(payload: UserLogin, db: DatabaseSession = Depends(get_db)):
             detail="This account has been deactivated. Please contact support."
         )
 
-    token = create_access_token({"sub": user.id, "role": user.role})
+    result = _token_response(user, db, request)
+    db.commit()
+    return result
+
+@router.post("/refresh", response_model=Token)
+def refresh_session(payload: RefreshTokenRequest, request: Request, db: DatabaseSession = Depends(get_db)):
+    now = datetime.utcnow()
+    old = db.query(DeviceSession).filter_by(
+        token_hash=hash_session_token(payload.refresh_token)
+    ).first()
+    if not old or old.revoked_at or old.expires_at <= now.isoformat():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid or expired refresh token")
+    user = db.query(User).filter_by(id=old.user_id).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="User account unavailable")
+    new_raw = _create_session(user, db, request, old.device_id)
+    db.flush()
+    new_row = db.query(DeviceSession).filter_by(
+        token_hash=hash_session_token(new_raw)
+    ).first()
+    old.revoked_at = now.isoformat()
+    old.replaced_by_id = new_row.id
+    old.last_used_at = now.isoformat()
+    db.add(old)
+    db.commit()
     return {
-        "access_token": token,
-        "token_type": "Bearer",
-        "user": user.to_dict()
+        "access_token": create_access_token({"sub": user.id, "role": user.role}),
+        "token_type": "Bearer", "refresh_token": new_raw, "user": user.to_dict()
     }
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout_session(payload: LogoutRequest, current_user: User = Depends(get_current_user),
+                   db: DatabaseSession = Depends(get_db)):
+    if payload.refresh_token:
+        rows = db.query(DeviceSession).filter_by(
+            user_id=current_user.id, token_hash=hash_session_token(payload.refresh_token)
+        ).all()
+    else:
+        rows = db.query(DeviceSession).filter_by(user_id=current_user.id).all()
+    for row in rows:
+        if not row.revoked_at:
+            row.revoked_at = datetime.utcnow().isoformat()
+            db.add(row)
+    db.commit()
+    return None
 
 @router.get("/me", response_model=UserOut)
 def get_me(current_user: User = Depends(get_current_user)):

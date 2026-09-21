@@ -74,6 +74,24 @@ class User(BaseModel):
         "updated_at": "TEXT"
     }
 
+class DeviceSession(BaseModel):
+    """Rotatable device session; only a SHA-256 token hash is persisted."""
+    __tablename__ = "device_sessions"
+    __fields__ = {
+        "id": "TEXT PRIMARY KEY",
+        "user_id": "TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE",
+        "token_hash": "TEXT UNIQUE NOT NULL",
+        "device_id": "TEXT",
+        "device_name": "TEXT",
+        "user_agent": "TEXT",
+        "ip_address": "TEXT",
+        "created_at": "TEXT",
+        "last_used_at": "TEXT",
+        "expires_at": "TEXT NOT NULL",
+        "revoked_at": "TEXT",
+        "replaced_by_id": "TEXT"
+    }
+
 class DonorProfile(BaseModel):
     __tablename__ = "donor_profiles"
     __fields__ = {
@@ -274,7 +292,7 @@ class AlgorithmConfig(BaseModel):
 
 ALL_MODELS = [
     AlgorithmConfig,
-    User, DonorProfile, RequesterProfile, BloodRequest,
+    User, DeviceSession, DonorProfile, RequesterProfile, BloodRequest,
     DispatchWave, DonorOffer, Assignment, DonationRecord,
     BloodCenter, AuditLog, CompatibilityPolicy
 ]
@@ -307,6 +325,8 @@ def create_all(conn=None):
 
     # Indices
     cur.execute("CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_device_sessions_user ON device_sessions(user_id);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_device_sessions_hash ON device_sessions(token_hash);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_donor_status_coords ON donor_profiles(availability_status, latitude, longitude);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_donor_blood ON donor_profiles(blood_group);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_req_status ON blood_requests(status);")

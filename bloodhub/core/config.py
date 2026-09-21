@@ -29,6 +29,31 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+    DATABASE_BACKEND: str = os.getenv("DATABASE_BACKEND", "sqlite").lower()
+    # Neon URLs are accepted as DATABASE_URL; these settings make deployment
+    # explicit without forcing cloud dependencies in local mode.
+    NEON_DATABASE_URL: str = os.getenv("NEON_DATABASE_URL", "")
+    POSTGIS_ENABLED: bool = os.getenv("POSTGIS_ENABLED", "false").lower() in ("true", "1", "yes")
+
+    # Optional distributed cache/session infrastructure (Upstash Redis).
+    REDIS_URL: str = os.getenv("REDIS_URL", "")
+    UPSTASH_REDIS_REST_URL: str = os.getenv("UPSTASH_REDIS_REST_URL", "")
+    UPSTASH_REDIS_REST_TOKEN: str = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
+    REDIS_ENABLED: bool = os.getenv("REDIS_ENABLED", "false").lower() in ("true", "1", "yes")
+
+    # Notification integrations default to safe no-op/mock providers.
+    FCM_PROVIDER: str = os.getenv("FCM_PROVIDER", "mock").lower()
+    FCM_PROJECT_ID: str = os.getenv("FCM_PROJECT_ID", "")
+    FCM_CREDENTIALS_JSON: str = os.getenv("FCM_CREDENTIALS_JSON", "")
+    SMS_PROVIDER: str = os.getenv("SMS_PROVIDER", "mock").lower()
+    TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID", "")
+    TWILIO_AUTH_TOKEN: str = os.getenv("TWILIO_AUTH_TOKEN", "")
+    TWILIO_FROM_NUMBER: str = os.getenv("TWILIO_FROM_NUMBER", "")
+    WHATSAPP_FROM_NUMBER: str = os.getenv("WHATSAPP_FROM_NUMBER", "")
+
+    # Device sessions
+    SESSION_TOKEN_EXPIRE_DAYS: int = int(os.getenv("SESSION_TOKEN_EXPIRE_DAYS", "30"))
+    SESSION_TOKEN_BYTES: int = int(os.getenv("SESSION_TOKEN_BYTES", "32"))
     
     # CORS
     CORS_ORIGINS: List[str] = ["*"]
