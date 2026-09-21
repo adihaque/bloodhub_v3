@@ -48,3 +48,15 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
             detail="Administrative privileges required"
         )
     return current_user
+
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: DatabaseSession = Depends(get_db)
+):
+    if not credentials:
+        return None
+    token = credentials.credentials
+    payload = decode_access_token(token)
+    if not payload or not payload.get("sub"):
+        return None
+    return db.query(User).filter_by(id=payload["sub"], is_active=1).first()

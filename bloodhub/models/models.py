@@ -159,9 +159,18 @@ class DonorOffer(BaseModel):
         "request_id": "TEXT NOT NULL REFERENCES blood_requests(id) ON DELETE CASCADE",
         "donor_id": "TEXT NOT NULL REFERENCES users(id)",
         "status": "TEXT DEFAULT 'OFFERED'",
+        "channels": "TEXT DEFAULT 'IN_APP,WHATSAPP'",
+        "score": "REAL DEFAULT 0.0",
+        "distance_km": "REAL DEFAULT 0.0",
+        "score_breakdown": "TEXT",
+        "whatsapp_url": "TEXT",
+        "whatsapp_status": "TEXT DEFAULT 'DELIVERED'",
+        "in_app_status": "TEXT DEFAULT 'DELIVERED'",
+        "sms_status": "TEXT DEFAULT 'SENT'",
         "sent_at": "TEXT",
         "expires_at": "TEXT NOT NULL",
         "responded_at": "TEXT",
+        "response_latency_seconds": "REAL",
         "rejection_reason": "TEXT"
     }
 
@@ -232,7 +241,39 @@ class CompatibilityPolicy(BaseModel):
         "created_at": "TEXT"
     }
 
+class AlgorithmConfig(BaseModel):
+    __tablename__ = "algorithm_config"
+    __fields__ = {
+        "id": "TEXT PRIMARY KEY",
+        "compatibility_exact_pts": "REAL DEFAULT 40.0",
+        "compatibility_compatible_pts": "REAL DEFAULT 25.0",
+        "proximity_weight_pts": "REAL DEFAULT 35.0",
+        "reliability_weight_pts": "REAL DEFAULT 15.0",
+        "interval_weight_pts": "REAL DEFAULT 10.0",
+        "intent_regular_bonus": "REAL DEFAULT 5.0",
+        "intent_when_needed_bonus": "REAL DEFAULT 2.0",
+        "cooldown_days": "INTEGER DEFAULT 90",
+        "wave1_radius_km": "REAL DEFAULT 5.0",
+        "wave1_timeout_sec": "INTEGER DEFAULT 25",
+        "wave1_candidates": "INTEGER DEFAULT 4",
+        "wave2_radius_km": "REAL DEFAULT 8.0",
+        "wave2_timeout_sec": "INTEGER DEFAULT 25",
+        "wave2_candidates": "INTEGER DEFAULT 6",
+        "wave3_radius_km": "REAL DEFAULT 15.0",
+        "wave3_timeout_sec": "INTEGER DEFAULT 30",
+        "wave3_candidates": "INTEGER DEFAULT 10",
+        "wave4_radius_km": "REAL DEFAULT 25.0",
+        "wave4_timeout_sec": "INTEGER DEFAULT 35",
+        "wave4_candidates": "INTEGER DEFAULT 15",
+        "auto_dispatch_whatsapp": "INTEGER DEFAULT 1",
+        "auto_dispatch_in_app": "INTEGER DEFAULT 1",
+        "auto_dispatch_sms": "INTEGER DEFAULT 1",
+        "updated_at": "TEXT",
+        "updated_by": "TEXT"
+    }
+
 ALL_MODELS = [
+    AlgorithmConfig,
     User, DonorProfile, RequesterProfile, BloodRequest,
     DispatchWave, DonorOffer, Assignment, DonationRecord,
     BloodCenter, AuditLog, CompatibilityPolicy
@@ -293,6 +334,22 @@ def create_all(conn=None):
                 now_ts,
                 now_ts
             ]
+        )
+
+    # Automatic Algorithm Config Bootstrapping
+    cur.execute("SELECT id FROM algorithm_config WHERE id = 'active_config'")
+    if not cur.fetchone():
+        now_ts = datetime.utcnow().isoformat()
+        cur.execute(
+            "INSERT INTO algorithm_config (id, compatibility_exact_pts, compatibility_compatible_pts, "
+            "proximity_weight_pts, reliability_weight_pts, interval_weight_pts, intent_regular_bonus, "
+            "intent_when_needed_bonus, cooldown_days, wave1_radius_km, wave1_timeout_sec, wave1_candidates, "
+            "wave2_radius_km, wave2_timeout_sec, wave2_candidates, wave3_radius_km, wave3_timeout_sec, "
+            "wave3_candidates, wave4_radius_km, wave4_timeout_sec, wave4_candidates, auto_dispatch_whatsapp, "
+            "auto_dispatch_in_app, auto_dispatch_sms, updated_at, updated_by) "
+            "VALUES ('active_config', 40.0, 25.0, 35.0, 15.0, 10.0, 5.0, 2.0, 90, 5.0, 25, 4, 8.0, 25, 6, "
+            "15.0, 30, 10, 25.0, 35, 15, 1, 1, 1, ?, 'system')",
+            [now_ts]
         )
 
     conn.commit()

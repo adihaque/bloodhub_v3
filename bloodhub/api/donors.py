@@ -20,6 +20,12 @@ def _compose_donor_response(user: User, profile: DonorProfile) -> dict:
     data["full_name"] = user.full_name
     data["phone"] = user.phone
     data["email"] = user.email
+    data["total_donations"] = data.get("total_donations") or 0
+    data["reliability_score"] = (
+        data["reliability_score"]
+        if data.get("reliability_score") is not None
+        else 1.0
+    )
     return data
 
 @router.get("/profile", response_model=DonorProfileOut)
@@ -226,8 +232,15 @@ def reject_incoming_offer(
     if offer.status != "OFFERED":
         raise HTTPException(status_code=400, detail=f"Offer is not in OFFERED status (currently '{offer.status}')")
 
+    now = datetime.utcnow()
     offer.status = "REJECTED"
-    offer.responded_at = datetime.utcnow().isoformat()
+    offer.responded_at = now.isoformat()
+    if offer.sent_at:
+        try:
+            sent_dt = datetime.fromisoformat(offer.sent_at)
+            offer.response_latency_seconds = round((now - sent_dt).total_seconds(), 2)
+        except Exception:
+            pass
     offer.rejection_reason = payload.rejection_reason or "Donor declined"
     db.add(offer)
 

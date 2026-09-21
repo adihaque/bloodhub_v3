@@ -84,6 +84,12 @@ def atomic_accept_offer(db: DatabaseSession, offer_id: str, donor_id: str) -> Di
             # 3. Winning Donor: Atomic Lock & Transition
             offer.status = "ACCEPTED"
             offer.responded_at = now.isoformat()
+            if offer.sent_at:
+                try:
+                    sent_dt = datetime.fromisoformat(offer.sent_at)
+                    offer.response_latency_seconds = round((now - sent_dt).total_seconds(), 2)
+                except Exception:
+                    pass
             db.add(offer)
 
             request.units_fulfilled = int(request.units_fulfilled or 0) + 1

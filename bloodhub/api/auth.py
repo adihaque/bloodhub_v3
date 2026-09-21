@@ -80,7 +80,15 @@ def register_user(payload: UserRegister, db: DatabaseSession = Depends(get_db)):
             longitude=payload.longitude if payload.longitude is not None else 90.4125,
             address=address,
             preferred_radius_km=payload.preferred_radius_km or 15.0,
-            last_donation_date=payload.last_donation_date or None
+            last_donation_date=payload.last_donation_date or None,
+            total_donations=0,
+            reliability_score=1.0,
+            response_count=0,
+            accepted_count=0,
+            rejected_count=0,
+            timeout_count=0,
+            active_assignment_id=None,
+            fcm_token=None
         )
         db.add(donor_profile)
     elif new_user.role == "REQUESTER":

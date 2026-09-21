@@ -213,3 +213,69 @@ class AuditLogOut(BaseModel):
     created_at: str
     class Config:
         orm_mode = True
+
+# Algorithm & Inspection Schemas
+class AlgorithmConfigUpdate(BaseModel):
+    compatibility_exact_pts: Optional[float] = None
+    compatibility_compatible_pts: Optional[float] = None
+    proximity_weight_pts: Optional[float] = None
+    reliability_weight_pts: Optional[float] = None
+    interval_weight_pts: Optional[float] = None
+    intent_regular_bonus: Optional[float] = None
+    intent_when_needed_bonus: Optional[float] = None
+    cooldown_days: Optional[int] = None
+    wave1_radius_km: Optional[float] = None
+    wave1_timeout_sec: Optional[int] = None
+    wave1_candidates: Optional[int] = None
+    wave2_radius_km: Optional[float] = None
+    wave2_timeout_sec: Optional[int] = None
+    wave2_candidates: Optional[int] = None
+    wave3_radius_km: Optional[float] = None
+    wave3_timeout_sec: Optional[int] = None
+    wave3_candidates: Optional[int] = None
+    wave4_radius_km: Optional[float] = None
+    wave4_timeout_sec: Optional[int] = None
+    wave4_candidates: Optional[int] = None
+    auto_dispatch_whatsapp: Optional[int] = None
+    auto_dispatch_in_app: Optional[int] = None
+    auto_dispatch_sms: Optional[int] = None
+
+class AlgorithmConfigOut(BaseModel):
+    id: str
+    compatibility_exact_pts: float
+    compatibility_compatible_pts: float
+    proximity_weight_pts: float
+    reliability_weight_pts: float
+    interval_weight_pts: float
+    intent_regular_bonus: float
+    intent_when_needed_bonus: float
+    cooldown_days: int
+    wave1_radius_km: float
+    wave1_timeout_sec: int
+    wave1_candidates: int
+    wave2_radius_km: float
+    wave2_timeout_sec: int
+    wave2_candidates: int
+    wave3_radius_km: float
+    wave3_timeout_sec: int
+    wave3_candidates: int
+    wave4_radius_km: float
+    wave4_timeout_sec: int
+    wave4_candidates: int
+    auto_dispatch_whatsapp: int
+    auto_dispatch_in_app: int
+    auto_dispatch_sms: int
+    updated_at: Optional[str] = None
+    updated_by: Optional[str] = None
+    class Config:
+        orm_mode = True
+
+class AlgorithmPreviewRequest(BaseModel):
+    blood_group: str = "B+"
+    component: str = "WHOLE_BLOOD"
+    hospital_name: Optional[str] = "Square Hospital"
+    hospital_address: Optional[str] = "Panthapath, Dhaka"
+    latitude: float = 23.7533
+    longitude: float = 90.3817
+    radius_km: float = 10.0
+    max_candidates: int = 10
